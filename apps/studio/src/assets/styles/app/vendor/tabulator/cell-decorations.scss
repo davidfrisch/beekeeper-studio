@@ -5,4 +5,24 @@
     text-decoration-style: dotted;
     text-decoration-color: $text-light;
   }
+
+  // Array cells rendered as one pill per element. Kept to a single line so row
+  // heights stay uniform -- the cell editor drawer shows the full list.
+  .array-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .array-pill {
+    flex-shrink: 0;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgba($theme-base, 0.15);
+    color: $text-dark;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
 }

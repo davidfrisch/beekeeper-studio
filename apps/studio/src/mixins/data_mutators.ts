@@ -21,6 +21,28 @@ export function emptyResult(value: any) {
   return null
 }
 
+/** Longer entries wrap into an unreadable block, so those stay as plain text. */
+const MAX_PILL_LENGTH = 40
+
+/**
+ * Renders an array cell as one pill per element. Returns null when the value
+ * isn't an array of short scalars, in which case the caller falls back to text.
+ */
+export function buildPills(value: unknown): string | null {
+  if (!_.isArray(value) || value.length === 0) return null
+
+  const fits = value.every((v) =>
+    (_.isString(v) || _.isNumber(v) || _.isBoolean(v)) &&
+    String(v).length <= MAX_PILL_LENGTH
+  )
+  if (!fits) return null
+
+  const pills = value
+    .map((v) => `<span class="array-pill">${escapeHtml(String(v))}</span>`)
+    .join('')
+  return `<div class="array-pills">${pills}</div>`
+}
+
 export function buildFormatterWithTooltip(cellValue: string, tooltip: string, icon?: string) {
   if (!icon) {
     return `<div class="cell-link-wrapper" title="${escapeHtml(tooltip)}">${escapeHtml(cellValue)}</div>`
@@ -33,15 +55,6 @@ export default {
 
   methods: {
     niceString: helpers.niceString,
-    pillFormatter(cell: CellComponent) {
-      const nullValue = emptyResult(cell.getValue())
-      if (nullValue) {
-        return ''
-      }
-
-      const cellValue = cell.getValue()
-      return cellValue.map(cv => `<span class="mapper-pill">${cv}</span>`).join('')
-    },
     cellTooltip(
       _event,
       cell: CellComponent
@@ -83,6 +96,17 @@ export default {
       if (nullValue) {
         return nullValue
       }
+
+      // Arrays of short values read better as pills than as a JSON blob. Only
+      // when there's no FK decoration to render, which owns the cell contents.
+      if (!params?.fk) {
+        const pills = buildPills(cellValue)
+        if (pills) {
+          cell.getElement().classList.add(...classNames)
+          return pills
+        }
+      }
+
       cellValue = this.niceString(cellValue, true, params.binaryEncoding)
       cellValue = cellValue.replace(/\n/g, ' ↩ ');
 

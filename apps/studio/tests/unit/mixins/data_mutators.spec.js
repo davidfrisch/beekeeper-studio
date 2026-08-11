@@ -1,4 +1,4 @@
-import mutators, { buildFormatterWithTooltip } from "../../../src/mixins/data_mutators"
+import mutators, { buildFormatterWithTooltip, buildPills } from "../../../src/mixins/data_mutators"
 
 
 describe("cellFormatter", () => {
@@ -63,4 +63,38 @@ describe("cellFormatter", () => {
     expect(formatted).toBe(shouldBe)
   })
 
+})
+
+describe("buildPills", () => {
+  it("should render one pill per element", () => {
+    expect(buildPills(['QUALITY_LOW', 'FOLLOWUP_SMS_SENT'])).toBe(
+      '<div class="array-pills">' +
+      '<span class="array-pill">QUALITY_LOW</span>' +
+      '<span class="array-pill">FOLLOWUP_SMS_SENT</span>' +
+      '</div>'
+    )
+  })
+
+  it("should escape element contents", () => {
+    expect(buildPills(['<script>'])).toBe(
+      '<div class="array-pills"><span class="array-pill">&lt;script&gt;</span></div>'
+    )
+  })
+
+  it("should handle non-string scalars", () => {
+    expect(buildPills([1, 2])).toContain('<span class="array-pill">1</span>')
+    expect(buildPills([true])).toContain('<span class="array-pill">true</span>')
+  })
+
+  // Long entries wrap into an unreadable block, so they stay as text
+  it("should decline long values", () => {
+    expect(buildPills(['2026-07-24T22:00:00.000Z'.repeat(3)])).toBe(null)
+  })
+
+  it("should decline anything that isn't a non-empty array of scalars", () => {
+    expect(buildPills([])).toBe(null)
+    expect(buildPills('not an array')).toBe(null)
+    expect(buildPills(null)).toBe(null)
+    expect(buildPills([{ a: 1 }])).toBe(null)
+  })
 })
