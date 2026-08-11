@@ -49,7 +49,26 @@
 
       <span class="error-message" v-if="error">{{ error }}</span>
 
-      <div class="footer">
+      <div class="footer" v-if="confirmingClose">
+        <span class="discard-prompt">Discard unapplied changes?</span>
+        <span class="expand" />
+        <button
+          class="btn btn-flat btn-sm"
+          title="Esc"
+          @click.prevent="confirmingClose = false"
+        >
+          Keep editing
+        </button>
+        <button
+          class="btn btn-primary btn-sm"
+          title="Enter"
+          @click.prevent="discardAndClose"
+        >
+          Discard
+        </button>
+      </div>
+
+      <div class="footer" v-else>
         <span class="expand" />
         <button
           class="btn btn-flat btn-sm"
@@ -108,6 +127,7 @@ export default Vue.extend({
       content: "",
       dirty: false,
       error: null,
+      confirmingClose: false,
       wrapText: false,
       reinitializeTextEditor: 0,
     };
@@ -142,6 +162,7 @@ export default Vue.extend({
   },
   methods: {
     async open(payload) {
+      this.confirmingClose = false;
       this.cell = payload.cell;
       this.hasCell = true;
       this.columnName = payload.columnName;
@@ -158,6 +179,7 @@ export default Vue.extend({
       this.reinitializeTextEditor++;
     },
     reset() {
+      this.confirmingClose = false;
       this.cell = null;
       this.hasCell = false;
       this.columnName = "";
@@ -222,23 +244,54 @@ export default Vue.extend({
       }
     },
     /**
-     * Esc hides the sidebar but deliberately keeps the buffer, so reopening the
-     * same cell restores unsaved edits and closing never destroys work. In vim
-     * mode Esc leaves insert mode instead (same exception as EditorModal).
+     * Esc closes the drawer, asking first if there are unapplied changes. The
+     * prompt is inline in the footer rather than a modal: vue-js-modal closes
+     * itself on Escape from its own window listener, so a modal opened by this
+     * key would be dismissed by the same press. In vim mode Esc leaves insert
+     * mode instead (same exception as EditorModal).
      *
      * Bound on the document rather than the drawer element: the drawer isn't
      * focusable, so a local listener never fires -- the key goes to whatever
      * has focus, usually the grid. Esc therefore closes the drawer from
      * anywhere, except while a cell is being edited inline, where Esc already
      * means "cancel this edit".
+     *
+     * Once the discard prompt is showing, Enter confirms and Escape backs out.
      */
     handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Escape" || this.userKeymap === "vim") return;
       if (!this.hasCell) return;
       if (document.querySelector(".tabulator-editing")) return;
 
+      // While the prompt is up it owns both keys: Enter discards, Escape backs
+      // out of closing. Enter is ignored otherwise, so it stays available for
+      // newlines in the editor.
+      if (this.confirmingClose) {
+        if (e.key !== "Enter" && e.key !== "Escape") return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === "Enter") this.discardAndClose();
+        else this.confirmingClose = false;
+        return;
+      }
+
+      if (e.key !== "Escape" || this.userKeymap === "vim") return;
+
       e.preventDefault();
       e.stopPropagation();
+
+      if (this.dirty) {
+        this.confirmingClose = true;
+        return;
+      }
+
+      this.close();
+    },
+    discardAndClose() {
+      this.setContent(this.originalContent);
+      this.close();
+    },
+    close() {
+      this.confirmingClose = false;
       this.trigger(AppEvent.toggleSecondarySidebar, false);
     },
     copy() {
