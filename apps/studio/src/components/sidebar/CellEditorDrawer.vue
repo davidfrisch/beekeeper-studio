@@ -1,5 +1,5 @@
 <template>
-  <div class="json-cell-drawer">
+  <div class="cell-editor-drawer">
     <template v-if="hasCell">
       <div class="header">
         <div class="header-group">
@@ -14,12 +14,14 @@
           >
             <i class="material-icons">more_vert</i>
             <x-menu style="--target-align:right;">
-              <x-menuitem @click.prevent="reformat(2)">
-                <x-label>Format</x-label>
-              </x-menuitem>
-              <x-menuitem @click.prevent="reformat()">
-                <x-label>Minify</x-label>
-              </x-menuitem>
+              <template v-if="isJson">
+                <x-menuitem @click.prevent="reformat(2)">
+                  <x-label>Format</x-label>
+                </x-menuitem>
+                <x-menuitem @click.prevent="reformat()">
+                  <x-label>Minify</x-label>
+                </x-menuitem>
+              </template>
               <x-menuitem togglable :toggled="wrapText" @click.prevent="wrapText = !wrapText">
                 <x-label>Wrap Text</x-label>
               </x-menuitem>
@@ -33,13 +35,13 @@
 
       <div class="text-editor-wrapper">
         <text-editor
-          language-id="json"
+          :language-id="languageId"
           :value="content"
           :read-only="readOnly"
           :line-wrapping="wrapText"
           :force-initialize="reinitializeTextEditor"
           :replace-extensions="replaceExtensions"
-          :fold-gutters="true"
+          :fold-gutters="isJson"
           :line-numbers="false"
           @bks-value-change="handleValueChange"
         />
@@ -67,16 +69,19 @@
     </template>
 
     <div class="empty-text" v-else>
-      Double-click a JSON cell to edit it here
+      Double-click a cell to edit it here
     </div>
   </div>
 </template>
 
 <script lang="ts">
 /**
- * Edits a single json/jsonb cell as the root document, rather than showing the
+ * Edits a single cell's value as the root document, rather than showing the
  * whole row like JsonViewer does. Applying writes back through the cell's
  * setValue so it joins the normal pending-changes flow.
+ *
+ * JSON columns get folding, format/minify and validation; text columns are
+ * edited as-is, since there's nothing to parse or reformat.
  */
 import Vue from "vue";
 import _ from "lodash";
@@ -89,7 +94,7 @@ import { Languages } from "@/lib/editor/languageData";
 const JsonLanguage = Languages.find((lang) => lang.name === "json");
 
 export default Vue.extend({
-  name: "JsonCellDrawer",
+  name: "CellEditorDrawer",
   components: { TextEditor },
   data() {
     return {
@@ -97,6 +102,7 @@ export default Vue.extend({
       columnName: "",
       dataType: "",
       readOnly: false,
+      mode: "text",
       content: "",
       dirty: false,
       error: null,
@@ -105,9 +111,15 @@ export default Vue.extend({
     };
   },
   computed: {
+    isJson() {
+      return this.mode === "json";
+    },
+    languageId() {
+      return this.isJson ? "json" : undefined;
+    },
     rootBindings() {
       return [
-        { event: AppEvent.openJsonCellDrawer, handler: this.open },
+        { event: AppEvent.openCellEditorDrawer, handler: this.open },
         { event: AppEvent.switchingTab, handler: this.reset },
         { event: AppEvent.closingTab, handler: this.reset },
       ];
@@ -127,6 +139,9 @@ export default Vue.extend({
       this.columnName = payload.columnName;
       this.dataType = payload.dataType;
       this.readOnly = payload.readOnly;
+      this.mode = payload.mode;
+      // Text wraps by default; JSON is pretty-printed so it usually doesn't need to.
+      this.wrapText = payload.mode === "text";
       this.setContent(this.stringify(payload.value));
       // The sidebar pane is expanding as this fires, so the editor would
       // otherwise measure itself inside a zero-width container.
@@ -156,7 +171,7 @@ export default Vue.extend({
     // would lock the editor. apply() re-checks before writing.
     validate: _.debounce(function () {
       // An empty editor means NULL, which is valid.
-      if (this.content.trim() === "") {
+      if (!this.isJson || this.content.trim() === "") {
         this.error = null;
         return;
       }
@@ -175,7 +190,10 @@ export default Vue.extend({
       if (_.isTypedArray(value)) {
         value = typedArrayToString(value, this.$bksConfig.ui.general.binaryEncoding);
       }
-      if (typeof value !== "string") return JSON.stringify(value, null, 2);
+      if (typeof value !== "string") {
+        return this.isJson ? JSON.stringify(value, null, 2) : String(value);
+      }
+      if (!this.isJson) return value;
       try {
         return JsonLanguage.beautify(value);
       } catch {
@@ -207,7 +225,7 @@ export default Vue.extend({
       // An empty editor means NULL rather than an empty string, matching what
       // "Set as NULL" does elsewhere.
       const trimmed = this.content.trim();
-      this.cell.setValue(trimmed === "" ? null : trimmed);
+      this.cell.setValue(trimmed === "" ? null : this.content);
       this.setContent(this.content);
     },
     replaceExtensions(extensions) {

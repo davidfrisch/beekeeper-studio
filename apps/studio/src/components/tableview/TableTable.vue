@@ -321,7 +321,7 @@ import { ColumnComponent, CellComponent, RangeComponent, RowComponent } from 'ta
 import data_converter from "../../mixins/data_converter";
 import DataMutators from '../../mixins/data_mutators'
 import { FkLinkMixin } from '@/mixins/fk_click'
-import { JsonCellDrawerMixin } from '@/mixins/json_cell_drawer'
+import { CellEditorDrawerMixin } from '@/mixins/cell_editor_drawer'
 import Statusbar from '../common/StatusBar.vue'
 import RowFilterBuilder from './RowFilterBuilder.vue'
 import ColumnFilterModal from './ColumnFilterModal.vue'
@@ -338,7 +338,7 @@ import TableLength from '@/components/common/TableLength.vue'
 import { mapGetters, mapState } from 'vuex';
 import { TableUpdate, TableUpdateResult, ExtendedTableColumn } from '@/lib/db/models';
 import { dialectFor, formatOptionsFor, TableKey } from '@shared/lib/dialects/models'
-import { normalizeFilters, safeSqlFormat, createTableFilter, isNumericDataType, isDateDataType, isJsonDataType, rowHeaderField, joinFilters } from '@/common/utils'
+import { normalizeFilters, safeSqlFormat, createTableFilter, isNumericDataType, isDateDataType, rowHeaderField, joinFilters } from '@/common/utils'
 import { TableFilter } from '@/lib/db/models';
 import { LanguageData } from '../../lib/editor/languageData'
 import { escapeHtml, FormatterParams } from '@shared/lib/tabulator';
@@ -356,7 +356,7 @@ let draftFilters: TableFilter[] | string | null;
 
 export default Vue.extend({
   components: { Statusbar, ColumnFilterModal, TableLength, RowFilterBuilder, EditorModal, LoadingSpinner },
-  mixins: [data_converter, DataMutators, FkLinkMixin, JsonCellDrawerMixin],
+  mixins: [data_converter, DataMutators, FkLinkMixin, CellEditorDrawerMixin],
   props: ["active", 'tab', 'table'],
   data() {
     return {
@@ -1048,10 +1048,12 @@ export default Vue.extend({
 
       // Don't touch `editable` here -- paste uses it as its permission check
       // (see setCellValue in lib/menu/tableMenu).
-      if (isJsonDataType(column.dataType)) {
-        result['cellDblClick'] = (_e, cell: CellComponent) => this.openJsonCellDrawer(cell, {
+      const drawerMode = this.drawerModeFor(column.dataType)
+      if (drawerMode) {
+        result['cellDblClick'] = (_e, cell: CellComponent) => this.openCellEditorDrawer(cell, {
           dataType: column.dataType,
           readOnly: this.isEditorMenuDisabled(cell),
+          mode: drawerMode,
         })
       }
 
@@ -1467,13 +1469,10 @@ export default Vue.extend({
       //   return vueEditor(DateTimePickerEditorVue)
       // }
 
-      // No inline editor: json/jsonb open the cell drawer on double click.
-      if (isJsonDataType(dt)) return false
+      // No inline editor: these open the cell editor drawer on double click.
+      if (this.drawerModeFor(dt)) return false
 
       switch (dt?.toLowerCase() ?? '') {
-        case 'text':
-        case 'tsvector':
-          return 'textarea'
         case 'bool':
         case 'boolean':
           return 'list'

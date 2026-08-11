@@ -61,7 +61,7 @@
   import { escapeHtml, FormatterParams } from '@shared/lib/tabulator'
   import { dialectFor, formatOptionsFor } from '@shared/lib/dialects/models'
   import { FkLinkMixin } from '@/mixins/fk_click'
-  import { JsonCellDrawerMixin } from '@/mixins/json_cell_drawer'
+  import { CellEditorDrawerMixin } from '@/mixins/cell_editor_drawer'
   import MagicColumnBuilder from '@/lib/magic/MagicColumnBuilder'
   import Papa from 'papaparse'
   import { mapState, mapGetters } from 'vuex'
@@ -80,7 +80,7 @@
   import { FieldDescriptor, FieldEditData, FieldReadOnlyReasonStr, NgQueryResult, TableUpdate } from '@/lib/db/models'
   import { CellComponent, RangeComponent, RowComponent } from 'tabulator-tables'
   import { PropType } from 'vue'
-  import { safeSqlFormat, isJsonDataType } from '@/common/utils'
+  import { safeSqlFormat } from '@/common/utils'
 import { stringToTypedArray } from '@/common/utils'
 
   const log = rawLog.scope('ResultTable');
@@ -103,7 +103,7 @@ import { stringToTypedArray } from '@/common/utils'
 
   export default {
     components: { EditorModal },
-    mixins: [Converter, Mutators, FkLinkMixin, JsonCellDrawerMixin],
+    mixins: [Converter, Mutators, FkLinkMixin, CellEditorDrawerMixin],
     data() {
       return {
         tabulator: null,
@@ -537,10 +537,12 @@ import { stringToTypedArray } from '@/common/utils'
 
         // Don't touch `editable` here -- paste uses it as its permission check
         // (see setCellValue in lib/menu/tableMenu).
-        if (isJsonDataType(editData?.dataType)) {
-          result['cellDblClick'] = (_e, cell: CellComponent) => this.openJsonCellDrawer(cell, {
+        const drawerMode = this.drawerModeFor(editData?.dataType)
+        if (drawerMode) {
+          result['cellDblClick'] = (_e, cell: CellComponent) => this.openCellEditorDrawer(cell, {
             dataType: editData?.dataType,
             readOnly: !this.cellEditCheck(cell),
+            mode: drawerMode,
           })
         }
 
@@ -583,13 +585,10 @@ import { stringToTypedArray } from '@/common/utils'
       editorType(dataType: string) {
         const ne = vueEditor(NullableInputEditorVue)
 
-        // No inline editor: json/jsonb open the cell drawer on double click.
-        if (isJsonDataType(dataType)) return false
+        // No inline editor: these open the cell editor drawer on double click.
+        if (this.drawerModeFor(dataType)) return false
 
         switch (dataType?.toLowerCase() ?? '') {
-          case 'text':
-          case 'tsvector':
-            return 'textarea'
           case 'bool':
           case 'boolean':
             return 'list'

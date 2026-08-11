@@ -69,8 +69,8 @@ export enum AppEvent {
   updateJsonViewerSidebar = 'updateJsonViewerSidebar',
   jsonViewerSidebarExpandPath = 'jsonViewerSidebarExpandPath',
   jsonViewerSidebarValueChange = 'jsonViewerSidebarValueChange',
-  /** Open the json/jsonb cell drawer. First argument is the cell payload. */
-  openJsonCellDrawer = 'openJsonCellDrawer',
+  /** Open the cell editor drawer. First argument is the cell payload. */
+  openCellEditorDrawer = 'openCellEditorDrawer',
   /** A tab is about to be switched. First argument is the tab. */
   switchingTab = 'switchingTab',
   /** A tab has been switched. First argument is the tab. */

@@ -26,9 +26,9 @@
             :key="tab.id"
           />
         </template>
-        <template v-else-if="tab.id === 'json-cell'">
-          <json-cell-drawer
-            v-show="secondaryActiveTabId === 'json-cell'"
+        <template v-else-if="tab.id === 'cell-editor'">
+          <cell-editor-drawer
+            v-show="secondaryActiveTabId === 'cell-editor'"
             :key="tab.id"
           />
         </template>
@@ -49,7 +49,7 @@
 import Vue from "vue";
 import { mapState, mapActions } from "vuex";
 import JsonViewerSidebar from "./JsonViewerSidebar.vue";
-import JsonCellDrawer from "./JsonCellDrawer.vue";
+import CellEditorDrawer from "./CellEditorDrawer.vue";
 import { AppEvent } from "@/common/AppEvent";
 import IsolatedPluginView from "@/components/plugins/IsolatedPluginView.vue";
 
@@ -61,7 +61,7 @@ interface SidebarTab {
 
 export default Vue.extend({
   name: "SecondarySidebar",
-  components: { JsonViewerSidebar, JsonCellDrawer, IsolatedPluginView },
+  components: { JsonViewerSidebar, CellEditorDrawer, IsolatedPluginView },
   data() {
     return {
       reloaders: {},
