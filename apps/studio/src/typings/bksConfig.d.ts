@@ -425,6 +425,7 @@ declare interface IBksConfig {
         };
         resultTable: {
             openEditorModal: string;
+            resizeColumns: string;
         };
         tab: {
             closeTab: string;
@@ -451,6 +452,7 @@ declare interface IBksConfig {
             openEditorModal: string;
             pasteAsNewRows: string;
             previousPage: string;
+            resizeColumns: string;
         };
     };
     pluginSystem: {

@@ -486,6 +486,7 @@ export default Vue.extend({
         'tableTable.previousPage': this.navigatePage.bind(this, 'prev'),
         'tableTable.firstPage': this.navigatePage.bind(this, 'first'),
         'tableTable.openEditorModal': this.openEditorMenuByShortcut.bind(this),
+        'tableTable.resizeColumns': this.resizeColumnsShortcut.bind(this),
       })
     },
 
@@ -1092,6 +1093,12 @@ export default Vue.extend({
     pasteSelection() {
       if (!this.focusingTable() || !this.editable) return
       pasteRange(_.last(this.tabulator.getRanges()))
+    },
+    resizeColumnsShortcut() {
+      // Scoped to the focused grid so it doesn't fire while typing in a cell
+      // editor or the filter input.
+      if (!this.focusingTable()) return
+      resizeAllColumnsToFitContentAction(this.tabulator)
     },
     pasteAsNewRowsShortcut() {
       // Keyboard path is scoped to the focused grid, so it never reaches the

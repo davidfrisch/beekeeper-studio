@@ -82,6 +82,7 @@
         { "key": "firstPage", "label": "First Page" },
         { "key": "lastPage", "label": "Last Page" },
         { "key": "pasteAsNewRows", "label": "Paste clipboard as new rows"},
+        { "key": "resizeColumns", "label": "Resize Columns to Fit Content" },
         { "key": "nullSelection", "label": "Set selected cells to null"}
       ]
     },
@@ -89,7 +90,8 @@
       "key": "keybindings.resultTable",
       "label": "Result Table",
       "properties": [
-        { "key": "openEditorModal", "label": "Open Editor Modal" }
+        { "key": "openEditorModal", "label": "Open Editor Modal" },
+        { "key": "resizeColumns", "label": "Resize Columns to Fit Content" }
       ]
     }
   ]

@@ -67,7 +67,7 @@
   import { markdownTable } from 'markdown-table'
   import intervalParse from 'postgres-interval'
   import * as td from 'tinyduration'
-  import { copyRanges, copyActionsMenu, commonColumnMenu, resizeAllColumnsToFitContent, resizeAllColumnsToFixedWidth, createMenuItem, pasteRange } from '@/lib/menu/tableMenu';
+  import { copyRanges, copyActionsMenu, commonColumnMenu, resizeAllColumnsToFitContent, resizeAllColumnsToFixedWidth, resizeAllColumnsToFitContentAction, createMenuItem, pasteRange } from '@/lib/menu/tableMenu';
   import { tabulatorForTableData } from '@/common/tabulator';
   import EditorModal from '../tableview/EditorModal.vue'
   import { AppEvent } from "@/common/AppEvent";
@@ -172,7 +172,8 @@ import { stringToTypedArray } from '@/common/utils'
           'queryEditor.openTableFilter': this.focusOnFilterInput.bind(this),
           'general.save': this.saveChanges.bind(this),
           'general.openInSqlEditor': this.copyToSql.bind(this),
-          'resultTable.openEditorModal': this.openEditorMenuByShortcut.bind(this)
+          'resultTable.openEditorModal': this.openEditorMenuByShortcut.bind(this),
+          'resultTable.resizeColumns': this.resizeColumnsShortcut.bind(this)
         });
       },
       tableFilterKeymap() {
@@ -353,6 +354,9 @@ import { stringToTypedArray } from '@/common/utils'
           },
           disabled: areAllCellsReadOnly || !this.editingData,
         }
+      },
+      resizeColumnsShortcut() {
+        resizeAllColumnsToFitContentAction(this.tabulator)
       },
       openEditorMenuByShortcut() {
         const range: RangeComponent = _.last(this.tabulator.getRanges())
