@@ -29,7 +29,32 @@ const MAX_PILL_LENGTH = 40
  * isn't an array of short scalars, in which case the caller falls back to text.
  */
 export function buildPills(value: unknown): string | null {
-  if (!_.isArray(value) || value.length === 0) return null
+  const array = _.isArray(value) ? value : parseArrayLiteral(value)
+  if (!array || array.length === 0) return null
+  return buildPillsFromArray(array)
+}
+
+/**
+ * Postgres hands back custom enum arrays as their raw literal -- `{a,b}` --
+ * because pg has no registered parser for them, unlike built-in types such as
+ * date[] which arrive already parsed. Decode the simple unquoted form so those
+ * columns render like any other array.
+ */
+function parseArrayLiteral(value: unknown): string[] | null {
+  if (!_.isString(value)) return null
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
+
+  const inner = trimmed.slice(1, -1)
+  if (inner === '') return []
+  // Quotes or escapes mean the literal needs real parsing, which belongs in the
+  // driver rather than here -- fall back to showing the raw text.
+  if (/["\\]/.test(inner)) return null
+
+  return inner.split(',')
+}
+
+function buildPillsFromArray(value: unknown[]): string | null {
 
   const fits = value.every((v) =>
     (_.isString(v) || _.isNumber(v) || _.isBoolean(v)) &&

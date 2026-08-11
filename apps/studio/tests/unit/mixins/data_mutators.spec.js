@@ -98,3 +98,31 @@ describe("buildPills", () => {
     expect(buildPills([{ a: 1 }])).toBe(null)
   })
 })
+
+// pg has no parser for custom enum arrays, so they arrive as raw literals
+describe("buildPills with postgres array literals", () => {
+  it("should decode unquoted literals", () => {
+    expect(buildPills('{QUALITY_LOW,FOLLOWUP_SMS_SENT}')).toBe(
+      '<div class="array-pills">' +
+      '<span class="array-pill">QUALITY_LOW</span>' +
+      '<span class="array-pill">FOLLOWUP_SMS_SENT</span>' +
+      '</div>'
+    )
+  })
+
+  it("should render a single-element literal", () => {
+    expect(buildPills('{QUALITY_HIGH_LATENCY}')).toBe(
+      '<div class="array-pills"><span class="array-pill">QUALITY_HIGH_LATENCY</span></div>'
+    )
+  })
+
+  it("should leave empty and non-literal values as text", () => {
+    expect(buildPills('{}')).toBe(null)
+    expect(buildPills('not a literal')).toBe(null)
+  })
+
+  // Quoted elements need real parsing, which belongs in the driver
+  it("should decline quoted literals", () => {
+    expect(buildPills('{"has,comma","other"}')).toBe(null)
+  })
+})
