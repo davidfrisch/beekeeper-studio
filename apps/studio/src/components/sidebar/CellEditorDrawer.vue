@@ -85,6 +85,7 @@
  */
 import Vue from "vue";
 import _ from "lodash";
+import { mapGetters } from "vuex";
 import TextEditor from "@beekeeperstudio/ui-kit/vue/text-editor";
 import { AppEvent } from "@/common/AppEvent";
 import { monokaiInit } from "@uiw/codemirror-theme-monokai";
@@ -112,6 +113,12 @@ export default Vue.extend({
     };
   },
   computed: {
+    ...mapGetters({ settings: "settings/settings" }),
+    userKeymap() {
+      const value = this.settings?.keymap.value;
+      const keymapTypes = this.$config.defaults.keymapTypes;
+      return value && keymapTypes.map((k) => k.value).includes(value) ? value : "default";
+    },
     isJson() {
       return this.mode === "json";
     },
@@ -214,6 +221,26 @@ export default Vue.extend({
         // Invalid content stays put; the error message explains why.
       }
     },
+    /**
+     * Esc hides the sidebar but deliberately keeps the buffer, so reopening the
+     * same cell restores unsaved edits and closing never destroys work. In vim
+     * mode Esc leaves insert mode instead (same exception as EditorModal).
+     *
+     * Bound on the document rather than the drawer element: the drawer isn't
+     * focusable, so a local listener never fires -- the key goes to whatever
+     * has focus, usually the grid. Esc therefore closes the drawer from
+     * anywhere, except while a cell is being edited inline, where Esc already
+     * means "cancel this edit".
+     */
+    handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape" || this.userKeymap === "vim") return;
+      if (!this.hasCell) return;
+      if (document.querySelector(".tabulator-editing")) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.trigger(AppEvent.toggleSecondarySidebar, false);
+    },
     copy() {
       this.$native.clipboard.writeText(this.content);
       this.$noty.success("Copied the data to your clipboard!");
@@ -250,10 +277,13 @@ export default Vue.extend({
   },
   mounted() {
     this.registerHandlers(this.rootBindings);
+    // Capture phase: CodeMirror handles Esc itself and would otherwise consume it.
+    document.addEventListener("keydown", this.handleKeyDown, true);
   },
   beforeDestroy() {
     this.validate.cancel();
     this.unregisterHandlers(this.rootBindings);
+    document.removeEventListener("keydown", this.handleKeyDown, true);
   },
 });
 </script>
