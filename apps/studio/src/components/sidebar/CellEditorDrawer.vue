@@ -103,6 +103,7 @@ export default Vue.extend({
       dataType: "",
       readOnly: false,
       mode: "text",
+      array: false,
       content: "",
       dirty: false,
       error: null,
@@ -140,6 +141,7 @@ export default Vue.extend({
       this.dataType = payload.dataType;
       this.readOnly = payload.readOnly;
       this.mode = payload.mode;
+      this.array = !!payload.array;
       // Text wraps by default; JSON is pretty-printed so it usually doesn't need to.
       this.wrapText = payload.mode === "text";
       this.setContent(this.stringify(payload.value));
@@ -225,7 +227,13 @@ export default Vue.extend({
       // An empty editor means NULL rather than an empty string, matching what
       // "Set as NULL" does elsewhere.
       const trimmed = this.content.trim();
-      this.cell.setValue(trimmed === "" ? null : this.content);
+      if (trimmed === "") {
+        this.cell.setValue(null);
+      } else {
+        // Array columns hold a real array, not its text form -- the inline
+        // editor parses too (see preserveObject in NullableInputEditor).
+        this.cell.setValue(this.array ? JSON.parse(this.content) : this.content);
+      }
       this.setContent(this.content);
     },
     replaceExtensions(extensions) {

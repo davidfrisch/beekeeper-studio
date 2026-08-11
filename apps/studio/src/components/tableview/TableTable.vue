@@ -1048,7 +1048,7 @@ export default Vue.extend({
 
       // Don't touch `editable` here -- paste uses it as its permission check
       // (see setCellValue in lib/menu/tableMenu).
-      const drawerMode = this.drawerModeFor(column.dataType)
+      const drawerMode = this.drawerModeFor(column.dataType, { array: column.array })
       if (drawerMode) {
         result['cellDblClick'] = (_e, cell: CellComponent) => this.openCellEditorDrawer(cell, {
           dataType: column.dataType,

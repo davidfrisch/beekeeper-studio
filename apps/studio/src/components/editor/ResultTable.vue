@@ -537,7 +537,7 @@ import { stringToTypedArray } from '@/common/utils'
 
         // Don't touch `editable` here -- paste uses it as its permission check
         // (see setCellValue in lib/menu/tableMenu).
-        const drawerMode = this.drawerModeFor(editData?.dataType)
+        const drawerMode = this.drawerModeFor(editData?.dataType, { array: editData?.array })
         if (drawerMode) {
           result['cellDblClick'] = (_e, cell: CellComponent) => this.openCellEditorDrawer(cell, {
             dataType: editData?.dataType,

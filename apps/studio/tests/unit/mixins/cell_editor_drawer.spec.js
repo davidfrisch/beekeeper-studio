@@ -29,3 +29,22 @@ describe("drawerModeFor", () => {
     expect(drawerModeFor('')).toBe(null)
   })
 })
+
+describe("drawerModeFor with arrays", () => {
+  // Postgres names array types with a leading underscore: _date is date[]
+  it("should open array columns in json mode", () => {
+    expect(drawerModeFor('_date')).toBe('json')
+    expect(drawerModeFor('_text')).toBe('json')
+    expect(drawerModeFor('_int4')).toBe('json')
+  })
+
+  it("should honour an explicit array flag", () => {
+    expect(drawerModeFor('date', { array: true })).toBe('json')
+    expect(drawerModeFor('varchar', { array: true })).toBe('json')
+  })
+
+  it("should not treat scalars as arrays", () => {
+    expect(drawerModeFor('date')).toBe(null)
+    expect(drawerModeFor('date', { array: false })).toBe(null)
+  })
+})
