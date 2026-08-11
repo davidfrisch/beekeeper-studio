@@ -1,4 +1,4 @@
-import mutators, { buildFormatterWithTooltip } from "../../../src/mixins/data_mutators"
+import mutators, { buildFormatterWithTooltip, booleanClassFor } from "../../../src/mixins/data_mutators"
 
 
 describe("cellFormatter", () => {
@@ -63,4 +63,32 @@ describe("cellFormatter", () => {
     expect(formatted).toBe(shouldBe)
   })
 
+})
+
+describe("booleanClassFor", () => {
+  it("should colour real booleans", () => {
+    expect(booleanClassFor('boolean', true)).toBe('boolean-true')
+    expect(booleanClassFor('bool', false)).toBe('boolean-false')
+    expect(booleanClassFor('BOOLEAN', true)).toBe('boolean-true')
+  })
+
+  // MySQL stores booleans as tinyint(1), so they arrive as 0/1
+  it("should colour dialect-specific booleans", () => {
+    expect(booleanClassFor('tinyint(1)', 1)).toBe('boolean-true')
+    expect(booleanClassFor('tinyint(1)', 0)).toBe('boolean-false')
+    expect(booleanClassFor('bit(1)', '1')).toBe('boolean-true')
+  })
+
+  // A plain int column holding 0/1 is ambiguous, so it stays uncoloured
+  it("should ignore non-boolean columns", () => {
+    expect(booleanClassFor('int4', 1)).toBe(null)
+    expect(booleanClassFor('tinyint', 1)).toBe(null)
+    expect(booleanClassFor('text', 'true')).toBe(null)
+  })
+
+  it("should ignore missing values", () => {
+    expect(booleanClassFor('boolean', null)).toBe(null)
+    expect(booleanClassFor('boolean', undefined)).toBe(null)
+    expect(booleanClassFor(undefined, true)).toBe(null)
+  })
 })

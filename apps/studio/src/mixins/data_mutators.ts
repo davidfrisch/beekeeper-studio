@@ -21,6 +21,25 @@ export function emptyResult(value: any) {
   return null
 }
 
+/**
+ * Booleans arrive differently per dialect -- real booleans from Postgres, 0/1
+ * from MySQL's tinyint(1) -- so match on the column type and normalize the
+ * value. Only boolean-typed columns qualify: a plain int column holding 0 and 1
+ * is genuinely ambiguous.
+ */
+export function booleanClassFor(dataType: string | undefined, value: unknown): string | null {
+  if (!dataType || _.isNil(value)) return null
+  if (!/^(bool|boolean|tinyint\(1\)|bit\(1\))$/i.test(dataType.trim())) return null
+
+  if (value === true || value === 1 || value === '1' || /^true$/i.test(String(value))) {
+    return 'boolean-true'
+  }
+  if (value === false || value === 0 || value === '0' || /^false$/i.test(String(value))) {
+    return 'boolean-false'
+  }
+  return null
+}
+
 export function buildFormatterWithTooltip(cellValue: string, tooltip: string, icon?: string) {
   if (!icon) {
     return `<div class="cell-link-wrapper" title="${escapeHtml(tooltip)}">${escapeHtml(cellValue)}</div>`
@@ -77,6 +96,14 @@ export default {
 
       if (cellValue instanceof Uint8Array) {
         classNames.push('binary-type')
+      }
+
+      const boolClass = booleanClassFor(
+        cell.getColumn().getDefinition().dataType,
+        cellValue
+      )
+      if (boolClass) {
+        classNames.push(boolClass)
       }
 
       const nullValue = emptyResult(cellValue)

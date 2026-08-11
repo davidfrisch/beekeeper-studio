@@ -5,4 +5,12 @@
     text-decoration-style: dotted;
     text-decoration-color: $text-light;
   }
+
+  &.boolean-true > pre {
+    color: $brand-success;
+  }
+
+  &.boolean-false > pre {
+    color: $brand-danger;
+  }
 }
