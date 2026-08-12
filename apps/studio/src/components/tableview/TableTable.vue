@@ -1012,6 +1012,8 @@ export default Vue.extend({
         },
         mutatorData: this.resolveTabulatorMutator(column.dataType, dialectFor(this.connectionType)),
         dataType: column.dataType,
+        // Used by cellFormatter to colour each enum member distinctly
+        enumValues: column.enumValues,
         minWidth: globals.minColumnWidth,
         width: columnWidth,
         maxWidth: globals.maxColumnWidth,

@@ -511,6 +511,8 @@ import { stringToTypedArray } from '@/common/utils'
           headerTooltip,
           resizable: 'header',
           cssClass,
+          // Used by cellFormatter to colour each enum member distinctly
+          enumValues: editData?.enumValues,
           editable: this.cellEditCheck,
           editor: editorType,
           cellEditCancelled: (cell: CellComponent) => cell.getRow().normalizeHeight(),

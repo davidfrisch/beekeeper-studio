@@ -1,3 +1,13 @@
+@use "sass:color";
+
+// Enum values are coloured by a hashed hue (see enumColorFor). Only the hue
+// varies -- saturation and lightness are pinned per theme so every value keeps
+// a readable contrast rather than landing wherever the hash points.
+.tabulator-cell {
+  --enum-value-saturation: 65%;
+  --enum-value-lightness: #{if(color.channel($theme-bg, "lightness", $space: hsl) > 50%, 38%, 70%)};
+}
+
 .tabulator-cell {
   &.binary-type > pre {
     text-decoration-line: underline;

@@ -1,4 +1,4 @@
-import mutators, { buildFormatterWithTooltip } from "../../../src/mixins/data_mutators"
+import mutators, { buildFormatterWithTooltip, enumColorFor } from "../../../src/mixins/data_mutators"
 
 
 describe("cellFormatter", () => {
@@ -63,4 +63,27 @@ describe("cellFormatter", () => {
     expect(formatted).toBe(shouldBe)
   })
 
+})
+
+describe("enumColorFor", () => {
+  it("should be stable for the same value and column", () => {
+    expect(enumColorFor('active', 'status')).toBe(enumColorFor('active', 'status'))
+  })
+
+  it("should differ between enum members", () => {
+    const colors = ['active', 'pending', 'archived'].map((v) => enumColorFor(v, 'status'))
+    expect(new Set(colors).size).toBe(3)
+  })
+
+  // Seeded per column so neighbouring values spread out rather than depending
+  // on how the words happen to hash
+  it("should differ for the same value in another column", () => {
+    expect(enumColorFor('active', 'status')).not.toBe(enumColorFor('active', 'state'))
+  })
+
+  // Only the hue varies; contrast comes from theme-pinned saturation/lightness
+  it("should only vary the hue", () => {
+    const color = enumColorFor('active', 'status')
+    expect(color).toMatch(/^hsl\(\d{1,3} var\(--enum-value-saturation/)
+  })
 })

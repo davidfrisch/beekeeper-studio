@@ -21,6 +21,26 @@ export function emptyResult(value: any) {
   return null
 }
 
+/**
+ * A stable hue for an enum value, so each member of an enum is visually
+ * distinct and always renders the same colour. Seeded with the column too, so
+ * neighbouring values within one column spread out rather than depending on
+ * how the words happen to hash.
+ *
+ * Only the hue varies -- saturation and lightness are fixed by the theme, so
+ * every value keeps a readable contrast instead of landing wherever the hash
+ * points.
+ */
+export function enumColorFor(value: string, seed = ""): string {
+  let hash = 0
+  const input = `${seed}:${value}`
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) | 0
+  }
+  const hue = Math.abs(hash) % 360
+  return `hsl(${hue} var(--enum-value-saturation, 70%) var(--enum-value-lightness, 70%))`
+}
+
 export function buildFormatterWithTooltip(cellValue: string, tooltip: string, icon?: string) {
   if (!icon) {
     return `<div class="cell-link-wrapper" title="${escapeHtml(tooltip)}">${escapeHtml(cellValue)}</div>`
@@ -86,8 +106,17 @@ export default {
       cellValue = this.niceString(cellValue, true, params.binaryEncoding)
       cellValue = cellValue.replace(/\n/g, ' ↩ ');
 
+      // Enum members get a stable colour each, so a column of statuses is
+      // scannable. Skipped for FK cells, which own their own rendering.
+      const definition = cell.getColumn().getDefinition()
+      const enumValues: string[] | undefined = definition.enumValues
+      const isEnumMember = !params?.fk && enumValues?.includes(cellValue)
+      const enumStyle = isEnumMember
+        ? ` style="color:${enumColorFor(cellValue, definition.field || "")}"`
+        : ""
+
       // removing the <pre> will break selection / copy paste, see ResultTable
-      let result = `<pre>${escapeHtml(cellValue)}</pre>`
+      let result = `<pre${enumStyle}>${escapeHtml(cellValue)}</pre>`
       let tooltip = ''
 
       if (params?.fk) {
